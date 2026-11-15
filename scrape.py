@@ -1,6 +1,6 @@
 """Fetch Monopoly GO reward links from monopolygo.wiki and save the newest ones to links.json.
 Only the official mply.io links + reward amount are kept (no text is copied)."""
-import json, re, sys, datetime, urllib.request
+import json, re, sys, datetime, urllib.request, urllib.error, urllib.parse
 from html.parser import HTMLParser
 
 SOURCE = "https://monopolygo.wiki/latest-reward-links"
@@ -31,15 +31,35 @@ class Links(HTMLParser):
         for b in s.stack: b[1] += " " + d
         if s.cur: s.cur["text"] += d
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k): return None
+
+def next_hop(url):
+    """Return the Location of one redirect step (without following it)."""
+    opener = urllib.request.build_opener(NoRedirect)
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        r = opener.open(req, timeout=20)
+        body = r.read(20000).decode("utf-8", "ignore")
+        m = re.search(r'https?://mply\.io/[A-Za-z0-9_\-]+', body)   # JS / meta refresh redirect
+        return m.group(0) if m else None
+    except urllib.error.HTTPError as e:
+        loc = e.headers.get("Location")
+        return urllib.parse.urljoin(url, loc) if loc else None
+    except Exception:
+        return None
+
 def resolve(href):
-    """Return the final mply.io URL (follows the site's own short links if needed)."""
+    """Return the official mply.io URL (follows the site's own short links step by step)."""
     if "mply.io" in href:
         return href.split("?")[0]
-    if re.search(r"mplygo\.wiki|monopolygo\.wiki/(go|l|r)/", href):
-        try:
-            final, _ = get(href)
-            if "mply.io" in final: return final.split("?")[0]
-        except Exception: pass
+    if re.search(r"mplygo\.wiki/", href):
+        url = href
+        for _ in range(5):
+            url = next_hop(url)
+            if not url: break
+            if "mply.io" in url: return url.split("?")[0]
+        print("WARN could not resolve", href)
     return None
 
 def reward(text):
