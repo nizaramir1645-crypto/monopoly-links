@@ -59,17 +59,38 @@ def main():
     # remember first-seen dates of links that dropped off, too
     history = old.get("history", {})
 
-    _, html = get(SOURCE)
-    p = Links(); p.feed(html)
+    final, html = get(SOURCE)
+    open("debug.html", "w", encoding="utf-8").write(html)
     found, urls = [], set()
+
+    # 1) normal <a href> links
+    p = Links(); p.feed(html)
     for it in p.items:
         url = resolve(it["href"])
         if not url or url in urls: continue
         urls.add(url)
-        ctx = it["text"] + " " + it["ctx_ref"][1][:300]
-        found.append({"url": url, "reward": reward(ctx)})
-        if len(found) >= MAX_LINKS: break
+        found.append({"url": url, "reward": reward(it["text"] + " " + it["ctx_ref"][1][:300])})
 
+    # 2) links hidden in scripts / JSON (sites built with JavaScript)
+    if not found:
+        for m in re.finditer(r'https?:(?:\\?/){2}mply\.io(?:\\?/)([A-Za-z0-9_\-]{6,})', html):
+            url = "https://mply.io/" + m.group(1)
+            if url in urls: continue
+            urls.add(url)
+            ctx = re.sub(r"<[^>]+>|\\[nrt]", " ", html[max(0, m.start()-300):m.end()+300])
+            found.append({"url": url, "reward": reward(ctx)})
+
+    found = found[:MAX_LINKS]
+
+    if not found:
+        hrefs = [i["href"] for i in p.items]
+        print("DEBUG final url:", final)
+        print("DEBUG html size:", len(html))
+        t = re.search(r"<title>(.*?)</title>", html, re.S)
+        print("DEBUG title:", t.group(1).strip() if t else None)
+        print("DEBUG count 'mply':", html.count("mply"), "| 'dice':", html.lower().count("dice"))
+        print("DEBUG links on page:", len(hrefs))
+        for h in hrefs[:60]: print("   ", h)
     if not found:
         print("No links found - keeping previous file."); sys.exit(0)
 
