@@ -70,6 +70,19 @@ def reward(text):
         if w in t.lower(): return "Free " + w.capitalize() + " Reward"
     return "Free Dice Rolls"
 
+def reward_near(html, href, fallback):
+    """Look at the text just before/after the link in the page to find '25 dice' etc."""
+    r = reward(fallback)
+    if r != "Free Dice Rolls": return r
+    i = html.find(href)
+    if i < 0: return r
+    def clean(t): return " ".join(re.sub(r"<[^>]+>", " ", t).split())
+    after, before = clean(html[i:i+800]), clean(html[max(0, i-800):i])
+    for t in (after[:200], before[-200:], after, before):
+        x = reward(t)
+        if x != "Free Dice Rolls": return x
+    return r
+
 def main():
     try:
         old = json.load(open(OUT, encoding="utf-8"))
@@ -89,7 +102,7 @@ def main():
         url = resolve(it["href"])
         if not url or url in urls: continue
         urls.add(url)
-        found.append({"url": url, "reward": reward(it["text"] + " " + it["ctx_ref"][1][:300])})
+        found.append({"url": url, "reward": reward_near(html, it["href"], it["text"] + " " + it["ctx_ref"][1][:300])})
 
     # 2) links hidden in scripts / JSON (sites built with JavaScript)
     if not found:
@@ -121,7 +134,7 @@ def main():
     # keep history small
     history = dict(list(history.items())[-200:])
 
-    data = {"updated": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    data = {"updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "links": found, "history": history}
     json.dump(data, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     print(json.dumps(found, indent=2))
