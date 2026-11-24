@@ -1,6 +1,11 @@
 {
-  "updated": "2026-11-23T14:53:15Z",
+  "updated": "2026-11-24T02:56:40Z",
   "links": [
+    {
+      "url": "https://mply.io/TJDNY0HEd1w",
+      "reward": "Free Dice Rolls",
+      "date": "2026-11-24"
+    },
     {
       "url": "https://mply.io/V2Nl1T8xAhc",
       "reward": "Free Dice Rolls",
@@ -8,11 +13,6 @@
     },
     {
       "url": "https://mply.io/eqQcaP1kbUU",
-      "reward": "Free Dice Rolls",
-      "date": "2026-11-15"
-    },
-    {
-      "url": "https://mply.io/Ai2qNgnabXc",
       "reward": "Free Dice Rolls",
       "date": "2026-11-15"
     }
@@ -25,6 +25,7 @@
     "https://mply.io/4k-Pf330-xA": "2026-11-17",
     "https://mply.io/3lFiVAoEWLQ": "2026-11-19",
     "https://mply.io/O_sOxacBFF8": "2026-11-19",
-    "https://mply.io/V2Nl1T8xAhc": "2026-11-20"
+    "https://mply.io/V2Nl1T8xAhc": "2026-11-20",
+    "https://mply.io/TJDNY0HEd1w": "2026-11-24"
   }
 }
